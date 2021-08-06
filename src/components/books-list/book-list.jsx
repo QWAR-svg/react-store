@@ -3,43 +3,59 @@ import BookListItem from "../book-list-item";
 import "./book-list.css";
 import { connect } from "react-redux";
 import withBookStoreService from "../hoc";
-import { booksLoaded } from "../../actions";
-import { bindActionCreators } from "redux";
+import { fetchBooks } from "../../actions";
 import { compose } from "../../utils";
+import Spinner from "../spinner/spinner";
+import ErrorIndicator from "../error-indicator";
 
-class BookList extends Component {
+class BookListContainer extends Component {
   componentDidMount() {
-    const { bookstoreService } = this.props;
-    const data = bookstoreService.getBooks();
-    this.props.booksLoaded(data);
+    this.props.fetchBooks();
   }
   render() {
-    const { books } = this.props;
-    return (
-      <ul className="book-list">
-        {books.map((book) => {
-          return (
-            <li key={book.id}>
-              <BookListItem book={book} />
-            </li>
-          );
-        })}
-      </ul>
-    );
+    const { books, loading, error } = this.props;
+    if (loading) {
+      return <Spinner />;
+    }
+
+    if (error) {
+      return <ErrorIndicator />;
+    }
+
+    return <BookList books={books} />;
   }
 }
 
-const mapStateToProps = ({ books }) => {
+const BookList = ({ books }) => {
+  return (
+    <ul className="book-list">
+      {books.map((book) => {
+        return (
+          <li key={book.id}>
+            <BookListItem book={book} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
+
+const mapStateToProps = ({ books, loading, error }) => {
   return {
     books,
+    loading,
+    error,
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
-  return bindActionCreators({ booksLoaded }, dispatch);
+const mapDispatchToProps = (dispatch, ownProps) => {
+  const { bookstoreService } = ownProps;
+  return {
+    fetchBooks: fetchBooks(bookstoreService, dispatch),
+  };
 };
 
 export default compose(
   withBookStoreService(),
   connect(mapStateToProps, mapDispatchToProps)
-)(BookList);
+)(BookListContainer);
